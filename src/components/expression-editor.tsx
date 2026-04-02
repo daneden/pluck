@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import Editor, { type Monaco, type OnMount } from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
 
@@ -17,41 +17,44 @@ export function ExpressionEditor({
   const libDisposableRef = useRef<{ dispose: () => void } | null>(null);
 
   const handleMount: OnMount = useCallback(
-    (editor: editor.IStandaloneCodeEditor, monaco: Monaco) => {
+    (_editor: editor.IStandaloneCodeEditor, monaco: Monaco) => {
       monacoRef.current = monaco;
 
       monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
         target: monaco.languages.typescript.ScriptTarget.ESNext,
+        allowNonTsExtensions: true,
         allowJs: true,
         strict: false,
         noEmit: true,
       });
 
-      updateTypeDeclaration(monaco, typeDeclaration);
+      monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+        noSemanticValidation: true,
+        noSyntaxValidation: true,
+      });
 
-      editor.focus();
-    },
-    [typeDeclaration]
-  );
-
-  const updateTypeDeclaration = useCallback(
-    (monaco: Monaco, declaration: string) => {
-      libDisposableRef.current?.dispose();
-      if (declaration) {
-        libDisposableRef.current =
-          monaco.languages.typescript.typescriptDefaults.addExtraLib(
-            declaration,
-            "file:///data.d.ts"
-          );
-      }
+      _editor.focus();
     },
     []
   );
 
-  // Update type declarations when they change
-  if (monacoRef.current && typeDeclaration) {
-    updateTypeDeclaration(monacoRef.current, typeDeclaration);
-  }
+  useEffect(() => {
+    const monaco = monacoRef.current;
+    if (!monaco) return;
+
+    libDisposableRef.current?.dispose();
+    if (typeDeclaration) {
+      libDisposableRef.current =
+        monaco.languages.typescript.typescriptDefaults.addExtraLib(
+          typeDeclaration,
+          "file:///data.d.ts"
+        );
+    }
+
+    return () => {
+      libDisposableRef.current?.dispose();
+    };
+  }, [typeDeclaration]);
 
   return (
     <div className="flex flex-col h-full">
@@ -67,6 +70,7 @@ export function ExpressionEditor({
         <Editor
           defaultLanguage="typescript"
           defaultValue="data"
+          path="file:///expression.ts"
           theme="vs-dark"
           onChange={(value) => onChange(value ?? "")}
           onMount={handleMount}
