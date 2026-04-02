@@ -4,7 +4,6 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { JsonInput } from "@/components/json-input";
 import { ExpressionEditor } from "@/components/expression-editor";
 import { OutputPreview } from "@/components/output-preview";
-import { inferTypeDeclaration } from "@/lib/infer-types";
 import { evaluateExpression, type EvalResult } from "@/lib/evaluate";
 
 const STORAGE_KEY_JSON = "pluck:json";
@@ -21,14 +20,13 @@ function loadStored(key: string, fallback: string): string {
 
 export default function Home() {
   const [parsedData, setParsedData] = useState<unknown>(null);
-  const [typeDeclaration, setTypeDeclaration] = useState("");
   const [result, setResult] = useState<EvalResult | null>(null);
+  const [expressionValue, setExpressionValue] = useState<string | undefined>(
+    undefined
+  );
   const [initialJson] = useState(() => loadStored(STORAGE_KEY_JSON, ""));
   const [initialExpression] = useState(() =>
     loadStored(STORAGE_KEY_EXPRESSION, "data")
-  );
-  const [expressionValue, setExpressionValue] = useState<string | undefined>(
-    undefined
   );
   const expressionRef = useRef(initialExpression);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(
@@ -41,7 +39,6 @@ export default function Home() {
       try {
         const parsed = JSON.parse(initialJson);
         setParsedData(parsed);
-        setTypeDeclaration(inferTypeDeclaration(parsed));
         setResult(evaluateExpression(expressionRef.current, parsed));
       } catch {
         // Stored JSON is invalid, ignore
@@ -49,29 +46,21 @@ export default function Home() {
     }
   }, [initialJson]);
 
-  const handleJsonParsed = useCallback(
-    (data: unknown, rawJson: string) => {
-      setParsedData(data);
-      setTypeDeclaration(inferTypeDeclaration(data));
-      const evalResult = evaluateExpression(expressionRef.current, data);
-      setResult(evalResult);
-      try {
-        localStorage.setItem(STORAGE_KEY_JSON, rawJson);
-      } catch {
-        // Storage full or unavailable
-      }
-    },
-    []
-  );
+  const handleJsonParsed = useCallback((data: unknown, rawJson: string) => {
+    setParsedData(data);
+    const evalResult = evaluateExpression(expressionRef.current, data);
+    setResult(evalResult);
+    try {
+      localStorage.setItem(STORAGE_KEY_JSON, rawJson);
+    } catch {}
+  }, []);
 
   const handleExpressionChange = useCallback(
     (value: string) => {
       expressionRef.current = value;
       try {
         localStorage.setItem(STORAGE_KEY_EXPRESSION, value);
-      } catch {
-        // Storage full or unavailable
-      }
+      } catch {}
       clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
         if (parsedData !== null) {
@@ -116,8 +105,8 @@ export default function Home() {
           <div className="h-1/3 border-b border-neutral-800">
             <ExpressionEditor
               initialValue={initialExpression}
-              typeDeclaration={typeDeclaration}
               value={expressionValue}
+              parsedData={parsedData}
               onChange={handleExpressionChange}
             />
           </div>

@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
-import Editor, { type OnMount } from "@monaco-editor/react";
-import type { editor } from "monaco-editor";
+import { useCallback, useMemo, useState } from "react";
+import CodeMirror from "@uiw/react-codemirror";
+import { json } from "@codemirror/lang-json";
+import { oneDark } from "@codemirror/theme-one-dark";
+import { EditorView } from "@codemirror/view";
 import { jsonPathAtLine } from "@/lib/json-path";
 
 interface JsonInputProps {
@@ -17,92 +19,85 @@ export function JsonInput({
   onPathClick,
 }: JsonInputProps) {
   const [error, setError] = useState<string | null>(null);
-  const [hasContent, setHasContent] = useState(initialValue.trim() !== "");
-  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
-  const isFormatting = useRef(false);
-  const pasteRef = useRef<HTMLTextAreaElement | null>(null);
-
-  const handlePasteFromTextarea = useCallback(
-    (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-      e.preventDefault();
-      const text = e.clipboardData.getData("text");
-      if (text.trim() === "") return;
-      try {
-        const parsed = JSON.parse(text);
-        const formatted = JSON.stringify(parsed, null, 2);
-        setError(null);
-        setHasContent(true);
-        onJsonParsed(parsed, formatted);
-        const editor = editorRef.current;
-        if (editor) {
-          isFormatting.current = true;
-          editor.setValue(formatted);
-          isFormatting.current = false;
-        }
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Invalid JSON");
-      }
-    },
-    [onJsonParsed]
-  );
-
-  const handleMount: OnMount = useCallback(
-    (editor) => {
-      editorRef.current = editor;
-
-      editor.onDidPaste(() => {
-        const text = editor.getValue();
-        if (text.trim() === "") return;
-        try {
-          const parsed = JSON.parse(text);
-          const formatted = JSON.stringify(parsed, null, 2);
-          onJsonParsed(parsed, formatted);
-          setError(null);
-          setHasContent(true);
-          if (formatted !== text) {
-            isFormatting.current = true;
-            editor.setValue(formatted);
-            isFormatting.current = false;
-          }
-        } catch (e) {
-          setError(e instanceof Error ? e.message : "Invalid JSON");
-        }
-      });
-
-      editor.onMouseDown((e) => {
-        if (!e.event.metaKey && !e.event.ctrlKey) return;
-        if (!e.target.position) return;
-        const text = editor.getValue();
-        const path = jsonPathAtLine(text, e.target.position.lineNumber);
-        if (path && onPathClick) {
-          e.event.preventDefault();
-          e.event.stopPropagation();
-          onPathClick(path);
-        }
-      });
-    },
-    [onJsonParsed, onPathClick]
-  );
+  const [value, setValue] = useState(initialValue);
 
   const handleChange = useCallback(
-    (value: string | undefined) => {
-      if (isFormatting.current) return;
-      const text = value ?? "";
-      setHasContent(text.trim() !== "");
-      if (text.trim() === "") {
+    (val: string) => {
+      setValue(val);
+      if (val.trim() === "") {
         setError(null);
         return;
       }
       try {
-        const parsed = JSON.parse(text);
+        const parsed = JSON.parse(val);
         setError(null);
-        onJsonParsed(parsed, text);
+        onJsonParsed(parsed, val);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Invalid JSON");
       }
     },
     [onJsonParsed]
   );
+
+  const extensions = useMemo(() => {
+    const exts = [
+      json(),
+      EditorView.lineWrapping,
+      // Handle paste: format JSON on paste
+      EditorView.domEventHandlers({
+        paste(event, view) {
+          const text = event.clipboardData?.getData("text");
+          if (!text) return false;
+          try {
+            const parsed = JSON.parse(text);
+            const formatted = JSON.stringify(parsed, null, 2);
+            event.preventDefault();
+            view.dispatch({
+              changes: {
+                from: 0,
+                to: view.state.doc.length,
+                insert: formatted,
+              },
+            });
+            setValue(formatted);
+            setError(null);
+            onJsonParsed(parsed, formatted);
+            return true;
+          } catch {
+            return false; // let default paste handle it
+          }
+        },
+      }),
+    ];
+
+    if (onPathClick) {
+      exts.push(
+        EditorView.domEventHandlers({
+          click(event, view) {
+            if (!event.metaKey && !event.ctrlKey) return false;
+            const pos = view.posAtCoords({
+              x: event.clientX,
+              y: event.clientY,
+            });
+            if (pos === null) return false;
+            const line = view.state.doc.lineAt(pos);
+            const path = jsonPathAtLine(
+              view.state.doc.toString(),
+              line.number
+            );
+            if (path) {
+              event.preventDefault();
+              onPathClick(path);
+              return true;
+            }
+            return false;
+          },
+        })
+      );
+    }
+
+    return exts;
+  }, [onJsonParsed, onPathClick]);
 
   return (
     <div className="flex flex-col h-full">
@@ -117,59 +112,19 @@ export function JsonInput({
           )}
         </div>
       </div>
-      <div className="flex-1 min-h-0 relative">
-        {/* Paste target overlay — visible when editor is empty, catches mobile paste */}
-        {!hasContent && (
-          <textarea
-            ref={pasteRef}
-            className="absolute inset-0 z-10 w-full h-full p-4 bg-[#1e1e1e] text-base font-mono text-neutral-200 resize-none focus:outline-none placeholder:text-neutral-600"
-            placeholder="Paste JSON here..."
-            onPaste={handlePasteFromTextarea}
-            onChange={(e) => {
-              // User typed instead of pasting — try to parse
-              const text = e.target.value;
-              if (text.trim() === "") return;
-              try {
-                const parsed = JSON.parse(text);
-                const formatted = JSON.stringify(parsed, null, 2);
-                setError(null);
-                setHasContent(true);
-                onJsonParsed(parsed, formatted);
-                const editor = editorRef.current;
-                if (editor) {
-                  isFormatting.current = true;
-                  editor.setValue(formatted);
-                  isFormatting.current = false;
-                }
-                e.target.value = "";
-              } catch {
-                // Not valid JSON yet, keep typing
-              }
-            }}
-            spellCheck={false}
-            autoCapitalize="off"
-            autoCorrect="off"
-          />
-        )}
-        <Editor
-          defaultLanguage="json"
-          defaultValue={initialValue}
-          theme="vs-dark"
+      <div className="flex-1 min-h-0 overflow-auto">
+        <CodeMirror
+          value={value}
           onChange={handleChange}
-          onMount={handleMount}
-          options={{
-            minimap: { enabled: false },
-            lineNumbers: "on",
-            scrollBeyondLastLine: false,
-            wordWrap: "on",
-            fontSize: 16,
-            fontFamily: "monospace",
-            padding: { top: 16, bottom: 16 },
-            renderLineHighlight: "none",
-            overviewRulerLanes: 0,
-            hideCursorInOverviewRuler: true,
-            folding: true,
+          extensions={extensions}
+          theme={oneDark}
+          placeholder="Paste JSON here..."
+          basicSetup={{
+            lineNumbers: true,
+            foldGutter: true,
+            highlightActiveLine: false,
           }}
+          style={{ height: "100%", fontSize: "16px" }}
         />
       </div>
     </div>
