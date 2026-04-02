@@ -114,6 +114,7 @@ export function JsonInput({
             overviewRulerLanes: 0,
             hideCursorInOverviewRuler: true,
             folding: true,
+            accessibilitySupport: "off",
           }}
         />
       </div>

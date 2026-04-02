@@ -108,6 +108,7 @@ export function ExpressionEditor({
             renderLineHighlight: "none",
             overviewRulerLanes: 0,
             hideCursorInOverviewRuler: true,
+            accessibilitySupport: "off",
             scrollbar: {
               vertical: "hidden",
               horizontal: "hidden",
