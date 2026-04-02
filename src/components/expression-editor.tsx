@@ -7,20 +7,24 @@ import type { editor } from "monaco-editor";
 interface ExpressionEditorProps {
   initialValue?: string;
   typeDeclaration: string;
+  value?: string;
   onChange: (value: string) => void;
 }
 
 export function ExpressionEditor({
   initialValue = "data",
   typeDeclaration,
+  value,
   onChange,
 }: ExpressionEditorProps) {
   const monacoRef = useRef<Monaco | null>(null);
+  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const libDisposableRef = useRef<{ dispose: () => void } | null>(null);
 
   const handleMount: OnMount = useCallback(
     (_editor: editor.IStandaloneCodeEditor, monaco: Monaco) => {
       monacoRef.current = monaco;
+      editorRef.current = _editor;
 
       monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
         target: monaco.languages.typescript.ScriptTarget.ESNext,
@@ -39,6 +43,21 @@ export function ExpressionEditor({
     },
     []
   );
+
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (editor && value !== undefined && editor.getValue() !== value) {
+      editor.setValue(value);
+      // Move cursor to end
+      const model = editor.getModel();
+      if (model) {
+        const lastLine = model.getLineCount();
+        const lastCol = model.getLineMaxColumn(lastLine);
+        editor.setPosition({ lineNumber: lastLine, column: lastCol });
+      }
+      editor.focus();
+    }
+  }, [value]);
 
   useEffect(() => {
     const monaco = monacoRef.current;

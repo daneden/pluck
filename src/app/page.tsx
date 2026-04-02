@@ -27,6 +27,9 @@ export default function Home() {
   const [initialExpression] = useState(() =>
     loadStored(STORAGE_KEY_EXPRESSION, "data")
   );
+  const [expressionValue, setExpressionValue] = useState<string | undefined>(
+    undefined
+  );
   const expressionRef = useRef(initialExpression);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined
@@ -79,6 +82,20 @@ export default function Home() {
     [parsedData]
   );
 
+  const handlePathClick = useCallback(
+    (path: string) => {
+      setExpressionValue(path);
+      expressionRef.current = path;
+      try {
+        localStorage.setItem(STORAGE_KEY_EXPRESSION, path);
+      } catch {}
+      if (parsedData !== null) {
+        setResult(evaluateExpression(path, parsedData));
+      }
+    },
+    [parsedData]
+  );
+
   return (
     <div className="h-screen flex flex-col">
       <header className="flex items-center px-4 py-3 border-b border-neutral-800">
@@ -90,6 +107,7 @@ export default function Home() {
           <JsonInput
             initialValue={initialJson}
             onJsonParsed={handleJsonParsed}
+            onPathClick={handlePathClick}
           />
         </div>
 
@@ -99,6 +117,7 @@ export default function Home() {
             <ExpressionEditor
               initialValue={initialExpression}
               typeDeclaration={typeDeclaration}
+              value={expressionValue}
               onChange={handleExpressionChange}
             />
           </div>
