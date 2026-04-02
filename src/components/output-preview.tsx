@@ -75,7 +75,7 @@ export function OutputPreview({ result }: OutputPreviewProps) {
               lineNumbers: "on",
               scrollBeyondLastLine: false,
               wordWrap: "on",
-              fontSize: 14,
+              fontSize: 16,
               fontFamily: "monospace",
               padding: { top: 16, bottom: 16 },
               renderLineHighlight: "none",
