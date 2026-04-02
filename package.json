@@ -16,6 +16,7 @@
     "@codemirror/lang-json": "^6.0.2",
     "@codemirror/state": "^6.6.0",
     "@codemirror/view": "^6.41.0",
+    "@fsegurai/codemirror-theme-vscode-dark": "^6.2.4",
     "@uiw/react-codemirror": "^4.25.9",
     "codemirror": "^6.0.2",
     "next": "16.2.2",
