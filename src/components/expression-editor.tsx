@@ -20,6 +20,19 @@ export function ExpressionEditor({
   const monacoRef = useRef<Monaco | null>(null);
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const libDisposableRef = useRef<{ dispose: () => void } | null>(null);
+  const typeDeclarationRef = useRef(typeDeclaration);
+  typeDeclarationRef.current = typeDeclaration;
+
+  const injectTypes = useCallback((monaco: Monaco, declaration: string) => {
+    libDisposableRef.current?.dispose();
+    if (declaration) {
+      libDisposableRef.current =
+        monaco.languages.typescript.typescriptDefaults.addExtraLib(
+          declaration,
+          "file:///data.d.ts"
+        );
+    }
+  }, []);
 
   const handleMount: OnMount = useCallback(
     (_editor: editor.IStandaloneCodeEditor, monaco: Monaco) => {
@@ -39,9 +52,14 @@ export function ExpressionEditor({
         noSyntaxValidation: true,
       });
 
+      // Inject any type declarations that were set before mount
+      if (typeDeclarationRef.current) {
+        injectTypes(monaco, typeDeclarationRef.current);
+      }
+
       _editor.focus();
     },
-    []
+    [injectTypes]
   );
 
   useEffect(() => {
@@ -62,20 +80,11 @@ export function ExpressionEditor({
   useEffect(() => {
     const monaco = monacoRef.current;
     if (!monaco) return;
-
-    libDisposableRef.current?.dispose();
-    if (typeDeclaration) {
-      libDisposableRef.current =
-        monaco.languages.typescript.typescriptDefaults.addExtraLib(
-          typeDeclaration,
-          "file:///data.d.ts"
-        );
-    }
-
+    injectTypes(monaco, typeDeclaration);
     return () => {
       libDisposableRef.current?.dispose();
     };
-  }, [typeDeclaration]);
+  }, [typeDeclaration, injectTypes]);
 
   return (
     <div className="flex flex-col h-full">
