@@ -9,3 +9,13 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+/* Ensure CodeMirror fills its container */
+.cm-theme,
+.cm-editor {
+  height: 100%;
+}
+
+.cm-scroller {
+  overflow: auto;
+}

@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import CodeMirror, { type ReactCodeMirrorRef } from "@uiw/react-codemirror";
 import { javascript } from "@codemirror/lang-javascript";
-import { oneDark } from "@codemirror/theme-one-dark";
+import { vsDark } from "@/lib/theme";
 import { EditorView } from "@codemirror/view";
 import { autocompletion } from "@codemirror/autocomplete";
 import { jsonCompletionSource } from "@/lib/json-completions";
@@ -64,7 +64,7 @@ export function ExpressionEditor({
           value={displayValue}
           onChange={handleChange}
           extensions={extensions}
-          theme={oneDark}
+          theme={vsDark}
           basicSetup={{
             lineNumbers: false,
             foldGutter: false,

@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { json } from "@codemirror/lang-json";
-import { oneDark } from "@codemirror/theme-one-dark";
+import { vsDark } from "@/lib/theme";
 import { EditorView } from "@codemirror/view";
 import type { EvalResult } from "@/lib/evaluate";
 
@@ -71,7 +71,7 @@ export function OutputPreview({ result }: OutputPreviewProps) {
           <CodeMirror
             value={value}
             extensions={extensions}
-            theme={oneDark}
+            theme={vsDark}
             editable={false}
             basicSetup={{
               lineNumbers: true,
