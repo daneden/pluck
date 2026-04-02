@@ -122,7 +122,7 @@ export function JsonInput({
         {!hasContent && (
           <textarea
             ref={pasteRef}
-            className="absolute inset-0 z-10 w-full h-full p-4 bg-transparent text-base font-mono text-neutral-200 resize-none focus:outline-none placeholder:text-neutral-600"
+            className="absolute inset-0 z-10 w-full h-full p-4 bg-[#1e1e1e] text-base font-mono text-neutral-200 resize-none focus:outline-none placeholder:text-neutral-600"
             placeholder="Paste JSON here..."
             onPaste={handlePasteFromTextarea}
             onChange={(e) => {
@@ -169,7 +169,6 @@ export function JsonInput({
             overviewRulerLanes: 0,
             hideCursorInOverviewRuler: true,
             folding: true,
-            accessibilitySupport: "off",
           }}
         />
       </div>

@@ -83,7 +83,6 @@ export function OutputPreview({ result }: OutputPreviewProps) {
               hideCursorInOverviewRuler: true,
               folding: true,
               domReadOnly: true,
-              accessibilitySupport: "off",
             }}
           />
         )}
