@@ -5,10 +5,11 @@ import Editor, { type OnMount } from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
 
 interface JsonInputProps {
-  onJsonParsed: (data: unknown) => void;
+  initialValue?: string;
+  onJsonParsed: (data: unknown, rawJson: string) => void;
 }
 
-export function JsonInput({ onJsonParsed }: JsonInputProps) {
+export function JsonInput({ initialValue = "", onJsonParsed }: JsonInputProps) {
   const [error, setError] = useState<string | null>(null);
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const isFormatting = useRef(false);
@@ -23,7 +24,7 @@ export function JsonInput({ onJsonParsed }: JsonInputProps) {
         try {
           const parsed = JSON.parse(text);
           const formatted = JSON.stringify(parsed, null, 2);
-          onJsonParsed(parsed);
+          onJsonParsed(parsed, formatted);
           setError(null);
           if (formatted !== text) {
             isFormatting.current = true;
@@ -49,7 +50,7 @@ export function JsonInput({ onJsonParsed }: JsonInputProps) {
       try {
         const parsed = JSON.parse(text);
         setError(null);
-        onJsonParsed(parsed);
+        onJsonParsed(parsed, text);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Invalid JSON");
       }
@@ -68,7 +69,7 @@ export function JsonInput({ onJsonParsed }: JsonInputProps) {
       <div className="flex-1 min-h-0">
         <Editor
           defaultLanguage="json"
-          defaultValue=""
+          defaultValue={initialValue}
           theme="vs-dark"
           onChange={handleChange}
           onMount={handleMount}

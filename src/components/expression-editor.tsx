@@ -5,11 +5,13 @@ import Editor, { type Monaco, type OnMount } from "@monaco-editor/react";
 import type { editor } from "monaco-editor";
 
 interface ExpressionEditorProps {
+  initialValue?: string;
   typeDeclaration: string;
   onChange: (value: string) => void;
 }
 
 export function ExpressionEditor({
+  initialValue = "data",
   typeDeclaration,
   onChange,
 }: ExpressionEditorProps) {
@@ -69,7 +71,7 @@ export function ExpressionEditor({
       <div className="flex-1 min-h-0">
         <Editor
           defaultLanguage="typescript"
-          defaultValue="data"
+          defaultValue={initialValue}
           path="file:///expression.ts"
           theme="vs-dark"
           onChange={(value) => onChange(value ?? "")}
